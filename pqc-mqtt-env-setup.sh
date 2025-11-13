@@ -137,12 +137,27 @@ ldconfig
 echo "Setting up environment..."
 mkdir -p /pqc-mqtt
 
-# Copy current directory contents to /test (adjust as needed)
-cp -r . /pqc-mqtt/ 2>/dev/null || true
-chmod 777 /pqc-mqtt/*
+# Copy only regular files from current directory to /test
+echo "Copying test files..."
+if [ -d "./pqc-mqtt-files" ]; then
+    cp -r ./pqc-mqtt-files/* /pqc-mqtt/ 2>/dev/null || true
+else
+    # Copy only regular files, not directories
+    find . -maxdepth 1 -type f -exec cp {} /pqc-mqtt/ \; 2>/dev/null || true
+    # Copy specific directories if they exist
+    [ -d "./scripts" ] && cp -r ./scripts /pqc-mqtt/ 2>/dev/null || true
+    [ -d "./config" ] && cp -r ./config /pqc-mqtt/ 2>/dev/null || true
+fi
 
-# Convert line endings if needed
-sed -i 's/\r//' /pqc-mqtt/*
+# Fix line endings only for text files
+echo "Fixing line endings for script files..."
+find /pqc-mqtt -type f -name "*.sh" -exec sed -i 's/\r//' {} \; 2>/dev/null || true
+find /pqc-mqtt -type f -name "*.txt" -exec sed -i 's/\r//' {} \; 2>/dev/null || true
+find /pqc-mqtt -type f -name "*.conf" -exec sed -i 's/\r//' {} \; 2>/dev/null || true
+
+# Set executable permissions only for script files
+echo "Setting executable permissions..."
+find /pqc-mqtt -type f -name "*.sh" -exec chmod +x {} \; 2>/dev/null || true
 
 # Generate CA key and certificate
 echo "Generating CA certificate..."
