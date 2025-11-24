@@ -1,14 +1,72 @@
 #!/bin/bash
 # This shell script is made by Chia-Chin Chung <60947091s@gapps.ntnu.edu.tw>
 
-read -p "Enter BROKER_IP [localhost]: " BROKER_IP
-BROKER_IP=${BROKER_IP:-localhost}
+# Copy CA certificate to remote hosts using SCP
+copy_ca_certificate() {
+    local user=$1
+    local host=$2
+    local remote_path=$3
+    local role=$4
+    
+    if [ -n "$user" ]; then
+        echo "Copying CA certificate to $role ($user@$host:$remote_path/)..."
+        
+        ssh-keyscan -H $host >> ~/.ssh/known_hosts 2>/dev/null
+
+        # Create remote directory if it doesn't exist
+        ssh -o BatchMode=yes -o ConnectTimeout=10 "$user@$host" "sudo mkdir -p $remote_path" 2>/dev/null || true
+        
+        # Copy CA certificate
+        if scp -o BatchMode=yes -o ConnectTimeout=10 /pqc-mqtt/CA.crt "$user@$host:$remote_path/"; then
+            echo "  ✓ Successfully copied CA certificate to $role"
+        else
+            echo "  ✗ Failed to copy CA certificate to $role"
+            echo "    Make sure SSH key authentication is set up or check the connection"
+        fi
+
+        ssh $user@$host "sudo mv $remote_path/CA.crt $remote_path/ && sudo chmod 644 $remote_path/CA.crt"
+    fi
+}
 
 SIG_ALG="falcon1024"
 INSTALLDIR="/opt/oqssa"
 export LD_LIBRARY_PATH=/opt/oqssa/lib64
 export OPENSSL_CONF=/opt/oqssa/ssl/openssl.cnf
 export PATH="/usr/local/bin:/usr/local/sbin:${INSTALLDIR}/bin:$PATH"
+
+# Get SCP configuration
+echo "=== SCP Configuration for CA Certificate ==="
+echo "The CA certificate will be copied to subscriber and publisher hosts."
+echo "Leave username blank if you don't want to copy to that host."
+echo ""
+
+read -p "Enter SSH username for PUBLISHER ($PUB_IP) [leave blank to skip]: " PUB_USER
+read -p "Enter SSH username for SUBSCRIBER ($SUB_IP) [leave blank to skip]: " SUB_USER
+
+# Generate CA key and certificate
+echo "Generating CA certificate..."
+cd /pqc-mqtt
+openssl req -x509 -new -newkey $SIG_ALG -keyout /pqc-mqtt/CA.key -out /pqc-mqtt/CA.crt -nodes -subj "/O=pqc-mqtt-ca" -days 3650
+
+# Copy CA certificate to publisher and subscriber
+if [ "$PUB_IP" != "localhost" ] && [ -n "$PUB_USER" ]; then
+    copy_ca_certificate "$PUB_USER" "$PUB_IP" "/pqc-mqtt/cert" "publisher"
+fi
+
+if [ "$SUB_IP" != "localhost" ] && [ -n "$SUB_USER" ]; then
+    copy_ca_certificate "$SUB_USER" "$SUB_IP" "/pqc-mqtt/cert" "subscriber"
+fi
+
+echo "=== OQSSA Configuration ==="
+read -p "Enter BROKER_IP [localhost]: " BROKER_IP
+BROKER_IP=${BROKER_IP:-localhost}
+
+read -p "Enter PUB_IP [localhost]: " PUB_IP
+PUB_IP=${PUB_IP:-localhost}
+
+read -p "Enter SUB_IP [localhost]: " SUB_IP
+SUB_IP=${SUB_IP:-localhost}
+
 
 # generate the configuration file for mosquitto
 echo -e "
