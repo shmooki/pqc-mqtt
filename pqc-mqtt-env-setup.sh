@@ -12,8 +12,10 @@ copy_ca_certificate() {
     if [ -n "$user" ]; then
         echo "Copying CA certificate to $role ($user@$host:$remote_path/)..."
         
+        ssh-keyscan -H $host >> ~/.ssh/known_hosts 2>/dev/null
+
         # Create remote directory if it doesn't exist
-        ssh -o BatchMode=yes -o ConnectTimeout=10 "$user@$host" "mkdir -p $remote_path" 2>/dev/null || true
+        ssh -o BatchMode=yes -o ConnectTimeout=10 "$user@$host" "sudo mkdir -p $remote_path" 2>/dev/null || true
         
         # Copy CA certificate
         if scp -o BatchMode=yes -o ConnectTimeout=10 /pqc-mqtt/CA.crt "$user@$host:$remote_path/"; then
@@ -22,6 +24,8 @@ copy_ca_certificate() {
             echo "  ✗ Failed to copy CA certificate to $role"
             echo "    Make sure SSH key authentication is set up or check the connection"
         fi
+
+        ssh $user@$host "sudo mv $remote_path/CA.crt $remote_path/ && sudo chmod 644 $remote_path/CA.crt"
     fi
 }
 
