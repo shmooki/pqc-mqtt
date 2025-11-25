@@ -4,6 +4,9 @@
 read -p "Enter BROKER_IP [localhost]: " BROKER_IP
 BROKER_IP=${BROKER_IP:-localhost}
 
+read -p "Enter SUB_IP [localhost]: " SUB_IP
+SUB_IP=${SUB_IP:-localhost}
+
 SIG_ALG="falcon1024"
 INSTALLDIR="/opt/oqssa"
 export LD_LIBRARY_PATH=/opt/oqssa/lib64
