@@ -2,6 +2,7 @@
 # This shell script is made by Chia-Chin Chung <60947091s@gapps.ntnu.edu.tw>
 
 # Copy CA certificate to remote hosts using SCP
+# Copy CA certificate to remote hosts using SCP
 copy_ca_certificate() {
     local user=$1
     local host=$2
@@ -9,22 +10,64 @@ copy_ca_certificate() {
     local role=$4
     
     if [ -n "$user" ]; then
-        echo "Copying CA certificate to $role ($user@$host:$remote_path/)..."
+        echo "=== $role ($user@$host) ==="
         
-        ssh-keyscan -H $host >> ~/.ssh/known_hosts 2>/dev/null
+        # Test SSH connection
+        if ssh "$user@$host" "echo 'SSH test successful'" &>/dev/null; then
+            echo "SSH key authentication: ✓ Working"
+            echo "Copying CA certificate and key..."
+            
+            # Validate local files exist
+            if [ ! -f "/pqc-mqtt/CA.crt" ]; then
+                echo "✗ Local CA certificate not found: /pqc-mqtt/CA.crt"
+                return 1
+            fi
+            
+            if [ ! -f "/pqc-mqtt/CA.key" ]; then
+                echo "✗ Local CA key not found: /pqc-mqtt/CA.key"
+                return 1
+            fi
+            
+            # Copy both files to /tmp first
+            if scp /pqc-mqtt/CA.crt /pqc-mqtt/CA.key "$user@$host:/tmp/"; then
+                echo "✓ Files copied to /tmp/ on remote host"
+                
+                # Move to final location with proper permissions
+                if ssh "$user@$host" "
+                    sudo mkdir -p '$remote_path' && \
+                    sudo cp /tmp/CA.crt /tmp/CA.key '$remote_path'/ && \
+                    sudo chmod 777 '$remote_path'/CA.crt && \
+                    sudo chmod 777 '$remote_path'/CA.key && \
+                    sudo rm -f /tmp/CA.crt /tmp/CA.key
+                "; then
+                    echo "✓ CA certificate and key installed successfully to $remote_path/"
+                else
+                    echo "✗ Failed to move files to final location"
+                    echo "  Manual command:"
+                    echo "  ssh $user@$host \"sudo mkdir -p '$remote_path' && sudo cp /tmp/CA.crt /tmp/CA.key '$remote_path'/ && sudo chmod 644 '$remote_path'/CA.crt && sudo chmod 600 '$remote_path'/CA.key\""
+                    return 1
+                fi
+            else
+                echo "✗ Failed to copy CA files to remote host"
+                echo "  Manual command: scp /pqc-mqtt/CA.crt /pqc-mqtt/CA.key $user@$host:/tmp/"
+                return 1
+            fi
 
-        # Create remote directory if it doesn't exist
-        ssh -o BatchMode=yes -o ConnectTimeout=10 "$user@$host" "sudo mkdir -p $remote_path" 2>/dev/null || true
-        
-        # Copy CA certificate
-        if scp -o BatchMode=yes -o ConnectTimeout=10 /pqc-mqtt/CA.crt "$user@$host:$remote_path/"; then
-            echo "  ✓ Successfully copied CA certificate to $role"
         else
-            echo "  ✗ Failed to copy CA certificate to $role"
-            echo "    Make sure SSH key authentication is set up or check the connection"
+            echo "SSH key authentication: ✗ Not set up"
+            echo ""
+            echo "MANUAL STEPS REQUIRED for $role:"
+            echo "1. Set up SSH key authentication:"
+            echo "   ssh-copy-id $user@$host"
+            echo ""
+            echo "2. Copy CA files manually:"
+            echo "   scp /pqc-mqtt/CA.crt /pqc-mqtt/CA.key $user@$host:/tmp/"
+            echo "   ssh $user@$host \"sudo mkdir -p '$remote_path' && sudo cp /tmp/CA.crt /tmp/CA.key '$remote_path'/ && sudo chmod 644 '$remote_path'/CA.crt && sudo chmod 600 '$remote_path'/CA.key\""
+            echo ""
+            echo "The CA files are available at: /pqc-mqtt/CA.crt and /pqc-mqtt/CA.key"
+            echo ""
         fi
-
-        ssh $user@$host "sudo mv $remote_path/CA.crt $remote_path/ && sudo chmod 644 $remote_path/CA.crt"
+        echo "----------------------------------------"
     fi
 }
 
@@ -33,6 +76,16 @@ INSTALLDIR="/opt/oqssa"
 export LD_LIBRARY_PATH=/opt/oqssa/lib64
 export OPENSSL_CONF=/opt/oqssa/ssl/openssl.cnf
 export PATH="/usr/local/bin:/usr/local/sbin:${INSTALLDIR}/bin:$PATH"
+
+echo "=== OQSSA Configuration ==="
+read -p "Enter BROKER_IP [localhost]: " BROKER_IP
+BROKER_IP=${BROKER_IP:-localhost}
+
+read -p "Enter PUB_IP [localhost]: " PUB_IP
+PUB_IP=${PUB_IP:-localhost}
+
+read -p "Enter SUB_IP [localhost]: " SUB_IP
+SUB_IP=${SUB_IP:-localhost}
 
 # Get SCP configuration
 echo "=== SCP Configuration for CA Certificate ==="
@@ -56,17 +109,6 @@ fi
 if [ "$SUB_IP" != "localhost" ] && [ -n "$SUB_USER" ]; then
     copy_ca_certificate "$SUB_USER" "$SUB_IP" "/pqc-mqtt/cert" "subscriber"
 fi
-
-echo "=== OQSSA Configuration ==="
-read -p "Enter BROKER_IP [localhost]: " BROKER_IP
-BROKER_IP=${BROKER_IP:-localhost}
-
-read -p "Enter PUB_IP [localhost]: " PUB_IP
-PUB_IP=${PUB_IP:-localhost}
-
-read -p "Enter SUB_IP [localhost]: " SUB_IP
-SUB_IP=${SUB_IP:-localhost}
-
 
 # generate the configuration file for mosquitto
 echo -e "
