@@ -16,8 +16,16 @@ The system consists of three main components:
 3. **Subscriber**: Client that receives and displays motion notifications
 
 ## Prerequisites
+You must have the following at your disposal to fully setup the PQC MQTT motion detection system:
+- 3 Raspberry Pi 5's
+- A breadboard
+- An HC-SR501 PIR motion sensor
+- 3 female-female jumper wires
+- 3 female-male jumper wires
+- 2 220 or 300 ohm resistors
+- 2 LEDs
 
-*To be determined based on your specific environment*
+You must have SSH configured on each Raspberry Pi as well as its respective local IP address.
 
 ## Setup
 
@@ -38,6 +46,10 @@ This script will:
 - Build and install Mosquitto MQTT broker
 - Set up environment variables and library paths
 - Create the /pqc-mqtt directory for the implementation architecture
+
+After that, setup the motion detection system circuit the same as below: 
+<img width="650" height="523" alt="image" src="https://github.com/user-attachments/assets/58192b06-5e54-4f2a-8e36-020e1fc291fa" />
+*Source: https://opensource.com/article/20/11/motion-detection-raspberry-pi*
 
 ### 2. Certificate Authority (CA) and Broker Setup
 
@@ -77,6 +89,7 @@ Hardware Configuration (default):
 - Motion Sensor: GPIO14 (BCM14, Physical pin 8)
 - Status LED: GPIO21 (BCM21, Physical pin 40)
 - Detection LED: GPIO20 (BCM20, Physical pin 38)
+
 Note that these configurations are based on the ones described in section 1. If any pins are changed, then the script will fail to recognize the sensor.
 
 The publisher will:
@@ -156,3 +169,4 @@ Complete cleanup script for removing all PQC/MQTT components.
 - **/pqc-mqtt/** - Test files and certificates
 - **/pqc-mqtt/cert/** - CA and device certificates
 - **/usr/local/bin/mosquitto** - MQTT binaries
+
