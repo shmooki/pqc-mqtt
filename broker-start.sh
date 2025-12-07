@@ -65,7 +65,6 @@ echo "-----------------------------------------"
 # generate the CA key and PQC certificates
 cd /pqc-mqtt
 openssl req -x509 -new -newkey $SIG_ALG -keyout /pqc-mqtt/CA.key -out /pqc-mqtt/CA.crt -nodes -subj "/O=pqc-mqtt-ca" -days 3650 > /dev/null 2>&1
-echo "-----------------------------------------"
 
 # copy CA cert to publisher and subscriber
 if [ "$PUB_IP" != "localhost" ] && [ -n "$PUB_USER" ]; then
