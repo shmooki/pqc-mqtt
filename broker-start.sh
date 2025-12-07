@@ -8,7 +8,7 @@ copy_ca_certificate() {
     local role=$4
     
     if [ -n "$user" ]; then
-        echo "Copying CA key and certificate to $user@$host."
+        echo "=== $user@$host CA key/cert configuration ==="
 
         # copy files to /tmp first (can't scp directly to / )
         if scp /pqc-mqtt/CA.crt /pqc-mqtt/CA.key "$user@$host:/tmp/"; then
