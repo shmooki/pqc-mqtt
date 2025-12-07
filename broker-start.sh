@@ -8,10 +8,11 @@ copy_ca_certificate() {
     local role=$4
     
     if [ -n "$user" ]; then
+        echo "Copying CA key and certificate to $user@$host."
 
         # copy files to /tmp first (can't scp directly to / )
         if scp /pqc-mqtt/CA.crt /pqc-mqtt/CA.key "$user@$host:/tmp/"; then
-            echo "Success   :   files copied to /tmp/ on remote host..."
+            echo "Success   :   files copied to /tmp/ on $user@$host"
         else
             echo "Failure   :   cannot copy CA files to remote host."
             return 1
@@ -25,7 +26,7 @@ copy_ca_certificate() {
             sudo chmod 777 '$remote_path'/CA.key && \
             sudo rm -f /tmp/CA.crt /tmp/CA.key
         "; then
-            echo "Success   : installed CA certificate and key to $remote_path/..."
+            echo "Success   : installed CA certificate and key to $user@$host:$remote_path/."
         else
             echo "Failure   : cannot move files to final $remote_path/"
             return 1
@@ -64,7 +65,7 @@ echo "-----------------------------------------"
 # generate the CA key and PQC certificates
 echo "Generating CA certificate..."
 cd /pqc-mqtt
-openssl req -x509 -new -newkey $SIG_ALG -keyout /pqc-mqtt/CA.key -out /pqc-mqtt/CA.crt -nodes -subj "/O=pqc-mqtt-ca" -days 3650 > /dev/null 2>&1
+openssl req -x509 -new -newkey $SIG_ALG -keyout /pqc-mqtt/CA.key -out /pqc-mqtt/CA.crt -nodes -subj "/O=pqc-mqtt-ca" -days 3650 
 echo "-----------------------------------------"
 
 # copy CA cert to publisher and subscriber
