@@ -49,6 +49,7 @@ This script will:
 
 After that, setup the motion detection system circuit the same as below: 
 <img width="650" height="523" alt="image" src="https://github.com/user-attachments/assets/58192b06-5e54-4f2a-8e36-020e1fc291fa" />
+
 *Source: https://opensource.com/article/20/11/motion-detection-raspberry-pi*
 
 ### 2. Certificate Authority (CA) and Broker Setup
@@ -169,4 +170,5 @@ Complete cleanup script for removing all PQC/MQTT components.
 - **/pqc-mqtt/** - Test files and certificates
 - **/pqc-mqtt/cert/** - CA and device certificates
 - **/usr/local/bin/mosquitto** - MQTT binaries
+
 
