@@ -1,5 +1,4 @@
 #!/bin/bash
-# This shell script is made by Chia-Chin Chung <60947091s@gapps.ntnu.edu.tw>
 
 read -p "Enter BROKER_IP [localhost]: " BROKER_IP
 BROKER_IP=${BROKER_IP:-localhost}

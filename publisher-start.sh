@@ -36,8 +36,6 @@ openssl x509 -req -in /pqc-mqtt/cert/publisher.csr -out /pqc-mqtt/cert/publisher
 chmod 777 /pqc-mqtt/cert/* 2>/dev/null || true
 
 echo "Certificates generated successfully."
-echo ""
-
 echo "Starting motion sensor monitor..."
 echo ""
 
@@ -66,63 +64,52 @@ while true; do
     timestamp=$(date '+%Y-%m-%d %H:%M:%S')
     
     if [ "$current_state" = "error" ]; then
-        echo "[$timestamp] ERROR: Cannot read GPIO$MOTION_PIN"
+        echo "[$timestamp]  : ERROR - cannot read GPIO$MOTION_PIN"
         sleep 2
         continue
     fi
     
     if [ "$first_run" = true ] && [ "$current_state" = "1" ]; then
-        # First run and motion is already detected
-        count=$((count + 1))
-        echo "[$timestamp]  :   Motion detected"
+        echo "[$timestamp]  :   Motion detected."
         
         # Blink detection LED
         sudo gpioset $GPIO_CHIP $LED_DETECT_PIN=1
-        sleep 0.3
+        sleep 0.25
         sudo gpioset $GPIO_CHIP $LED_DETECT_PIN=0
         
         # Publish to MQTT
-        message="{\"timestamp\": \"$timestamp\", \"motion\": true, \"type\": \"initial\"}"
+        message="[$timestamp]  :   Motion detected."
         mosquitto_pub -h $BROKER_IP -m "$message" -t "pqc-mqtt-sensor/motion-sensor" -q 0 -i "MotionSensor_pub" \
             --tls-version tlsv1.3 --cafile /pqc-mqtt/cert/CA.crt \
             --cert /pqc-mqtt/cert/publisher.crt --key /pqc-mqtt/cert/publisher.key 2>/dev/null && \
-            echo "Published to MQTT"
+            echo "[$timestamp]  :   Info successfully sent to broker."
         
         first_run=false
         last_state="1"
         sleep 2
         
     elif [ "$current_state" = "1" ] && [ "$last_state" = "0" ]; then
-        # Rising edge detection
-        count=$((count + 1))
         echo "[$timestamp]  :   Motion detected."
         
         # Blink detection LED
         sudo gpioset $GPIO_CHIP $LED_DETECT_PIN=1
-        sleep 0.3
+        sleep 0.25
         sudo gpioset $GPIO_CHIP $LED_DETECT_PIN=0
         
         # Publish to MQTT
-        message="{\"timestamp\": \"$timestamp\", \"motion\": true, \"type\": \"detection\"}"
+        message="[$timestamp]  :   Motion detected."
         if mosquitto_pub -h $BROKER_IP -m "$message" -t "pqc-mqtt-sensor/motion-sensor" -q 0 -i "MotionSensor_pub" \
             --tls-version tlsv1.3 --cafile /pqc-mqtt/cert/CA.crt \
             --cert /pqc-mqtt/cert/publisher.crt --key /pqc-mqtt/cert/publisher.key 2>/dev/null; then
-            echo "Published to MQTT"
+            echo "[$timestamp]  :   Info successfully sent to broker."
         else
-            echo "Failed to publish to MQTT"
+            echo "[$timestamp]  :   Info failed to send to broker."
         fi
         
         last_state="1"
         sleep 2  # Cooldown period
         
-    elif [ "$current_state" = "0" ] && [ "$last_state" = "1" ]; then
-        # Falling edge - motion stopped
-        echo "[$timestamp]  :   Motion cleared"
-        last_state="0"
-        first_run=false
-        
     elif [ "$current_state" = "0" ]; then
-        # No motion
         if [ "$first_run" = true ]; then
             first_run=false
         fi
@@ -136,7 +123,7 @@ while true; do
     # Publish heartbeat every 60 seconds
     current_time=$(date +%s)
     if [ -z "$last_heartbeat" ] || [ $((current_time - last_heartbeat)) -ge 60 ]; then
-        heartbeat_msg="{\"timestamp\": \"$timestamp\", \"status\": \"active\", \"sensor_pin\": $MOTION_PIN}"
+        heartbeat_msg="[$timestamp]  :   sensor heartbeat on $MOTION_PIN"
         echo "[$timestamp]  :   sensor heartbeat"
         
         mosquitto_pub -h $BROKER_IP -m "$heartbeat_msg" -t "pqc-mqtt-sensor/status" -q 0 -i "MotionSensor_pub" \
@@ -146,5 +133,5 @@ while true; do
         last_heartbeat=$current_time
     fi
     
-    sleep 0.5  
+    sleep 0.25
 done

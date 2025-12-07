@@ -1,7 +1,5 @@
 #!/bin/bash
-# This shell script is made by Chia-Chin Chung <60947091s@gapps.ntnu.edu.tw>
 
-# Copy CA certificate to remote hosts using SCP
 # Copy CA certificate to remote hosts using SCP
 copy_ca_certificate() {
     local user=$1
@@ -16,17 +14,6 @@ copy_ca_certificate() {
         if ssh "$user@$host" "echo 'SSH test successful'" &>/dev/null; then
             echo "SSH key authentication: ✓ Working"
             echo "Copying CA certificate and key..."
-            
-            # Validate local files exist
-            if [ ! -f "/pqc-mqtt/CA.crt" ]; then
-                echo "✗ Local CA certificate not found: /pqc-mqtt/CA.crt"
-                return 1
-            fi
-            
-            if [ ! -f "/pqc-mqtt/CA.key" ]; then
-                echo "✗ Local CA key not found: /pqc-mqtt/CA.key"
-                return 1
-            fi
             
             # Copy both files to /tmp first
             if scp /pqc-mqtt/CA.crt /pqc-mqtt/CA.key "$user@$host:/tmp/"; then
@@ -52,20 +39,8 @@ copy_ca_certificate() {
                 echo "  Manual command: scp /pqc-mqtt/CA.crt /pqc-mqtt/CA.key $user@$host:/tmp/"
                 return 1
             fi
-
         else
-            echo "SSH key authentication: ✗ Not set up"
-            echo ""
-            echo "MANUAL STEPS REQUIRED for $role:"
-            echo "1. Set up SSH key authentication:"
-            echo "   ssh-copy-id $user@$host"
-            echo ""
-            echo "2. Copy CA files manually:"
-            echo "   scp /pqc-mqtt/CA.crt /pqc-mqtt/CA.key $user@$host:/tmp/"
-            echo "   ssh $user@$host \"sudo mkdir -p '$remote_path' && sudo cp /tmp/CA.crt /tmp/CA.key '$remote_path'/ && sudo chmod 644 '$remote_path'/CA.crt && sudo chmod 600 '$remote_path'/CA.key\""
-            echo ""
-            echo "The CA files are available at: /pqc-mqtt/CA.crt and /pqc-mqtt/CA.key"
-            echo ""
+            echo "✗ SSH key authentication not working"
         fi
         echo "----------------------------------------"
     fi
@@ -136,10 +111,10 @@ use_identity_as_username true
 " > mosquitto.conf
 
 # generate the password file(add username and password) for the mosquitto MQTT broker
-mosquitto_passwd -b -c passwd nana 1234
+mosquitto_passwd -b -c passwd broker 12345
 
 # generate the Access Control List
-echo -e "user nana\ntopic readwrite pqc-mqtt-sensor/motion-sensor" > acl
+echo -e "user broker\ntopic readwrite pqc-mqtt-sensor/motion-sensor" > acl
 
 mkdir /pqc-mqtt/cert
 
