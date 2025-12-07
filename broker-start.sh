@@ -9,35 +9,27 @@ copy_ca_certificate() {
     
     if [ -n "$user" ]; then
 
-        # Test SSH connection
-        if ssh "$user@$host" "echo 'SSH test successful'" &>/dev/null; then
-            echo "-----------------------------------------"
-            
-            # copy files to /tmp first (can't scp directly to / )
-            if scp /pqc-mqtt/CA.crt /pqc-mqtt/CA.key "$user@$host:/tmp/"; then
-                echo "Success   :   files copied to /tmp/ on remote host..."
-                
-                # move to /pqc-mqtt/cert
-                if ssh "$user@$host" "
-                    sudo mkdir -p '$remote_path' && \
-                    sudo cp /tmp/CA.crt /tmp/CA.key '$remote_path'/ && \
-                    sudo chmod 777 '$remote_path'/CA.crt && \
-                    sudo chmod 777 '$remote_path'/CA.key && \
-                    sudo rm -f /tmp/CA.crt /tmp/CA.key
-                "; then
-                    echo "Success   : installed CA certificate and key to $remote_path/..."
-                else
-                    echo "Failure   : cannot move files to final $remote_path/"
-                    return 1
-                fi
-            else
-                echo "Failure   :   cannot copy CA files to remote host."
-                return 1
-            fi
+        # copy files to /tmp first (can't scp directly to / )
+        if scp /pqc-mqtt/CA.crt /pqc-mqtt/CA.key "$user@$host:/tmp/"; then
+            echo "Success   :   files copied to /tmp/ on remote host..."
         else
-            echo "Failure   : cannot perform SSH key authentication."
+            echo "Failure   :   cannot copy CA files to remote host."
+            return 1
         fi
-        echo "----------------------------------------"
+
+        # move CA cert and key to /pqc-mqtt/cert
+        if ssh "$user@$host" "
+            sudo mkdir -p '$remote_path' && \
+            sudo cp /tmp/CA.crt /tmp/CA.key '$remote_path'/ && \
+            sudo chmod 777 '$remote_path'/CA.crt && \
+            sudo chmod 777 '$remote_path'/CA.key && \
+            sudo rm -f /tmp/CA.crt /tmp/CA.key
+        "; then
+            echo "Success   : installed CA certificate and key to $remote_path/..."
+        else
+            echo "Failure   : cannot move files to final $remote_path/"
+            return 1
+        fi
     fi
 }
 
@@ -72,16 +64,18 @@ echo "-----------------------------------------"
 # generate the CA key and PQC certificates
 echo "Generating CA certificate..."
 cd /pqc-mqtt
-openssl req -x509 -new -newkey $SIG_ALG -keyout /pqc-mqtt/CA.key -out /pqc-mqtt/CA.crt -nodes -subj "/O=pqc-mqtt-ca" -days 3650
-echo "----------------------------------------"
+openssl req -x509 -new -newkey $SIG_ALG -keyout /pqc-mqtt/CA.key -out /pqc-mqtt/CA.crt -nodes -subj "/O=pqc-mqtt-ca" -days 3650 > /dev/null 2>&1
+echo "-----------------------------------------"
 
 # copy CA cert to publisher and subscriber
 if [ "$PUB_IP" != "localhost" ] && [ -n "$PUB_USER" ]; then
     copy_ca_certificate "$PUB_USER" "$PUB_IP" "/pqc-mqtt/cert" "publisher"
+    echo "-----------------------------------------"
 fi
 
 if [ "$SUB_IP" != "localhost" ] && [ -n "$SUB_USER" ]; then
     copy_ca_certificate "$SUB_USER" "$SUB_IP" "/pqc-mqtt/cert" "subscriber"
+    echo "-----------------------------------------"
 fi
 
 # generate the configuration file for mosquitto
