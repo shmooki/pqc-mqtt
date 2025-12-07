@@ -1,6 +1,7 @@
 #!/bin/bash
 
-# Original Dockerfile made by Chia-Chin Chung <60947091s@gapps.ntnu.edu.tw> and converted to a bash script
+# this script is a modified version of Chia-Chin Chung <60947091s@gapps.ntnu.edu.tw> wrote for oqs-demos/mosquitto
+# originally a docker file and converted to a bash script
 
 set -e  # Exit on any error
 

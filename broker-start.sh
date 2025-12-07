@@ -1,4 +1,5 @@
 #!/bin/bash
+# this script is a modified version of what Chia-Chin Chung <60947091s@gapps.ntnu.edu.tw> wrote for oqs-demos/mosquitto
 
 ########## functions ##########
 copy_ca_certificate() {
