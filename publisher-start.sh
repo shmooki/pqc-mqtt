@@ -1,6 +1,54 @@
 #!/bin/bash
 # This shell script is made by Chia-Chin Chung <60947091s@gapps.ntnu.edu.tw>
 
+# Function to read motion sensor data
+read_motion_sensor() {
+    local GPIO_PIN=${1:-17}
+    
+    # Export GPIO pin
+    if [ ! -d /sys/class/gpio/gpio${GPIO_PIN} ]; then
+        echo "${GPIO_PIN}" > /sys/class/gpio/export
+        sleep 0.1
+    fi
+    
+    # Set as input
+    echo "in" > /sys/class/gpio/gpio${GPIO_PIN}/direction
+    
+    # Read the value
+    local value=$(cat /sys/class/gpio/gpio${GPIO_PIN}/value)
+    
+    echo $value
+}
+
+publish_motion_simple() {
+    local BROKER=$1
+    local TOPIC="pqc-mqtt-sensor/motion-sensor"
+    local CLIENT_ID="MotionSensor_pub"
+    local GPIO_PIN=${2:-17}
+    
+    echo "Starting simple motion sensor publishing..."
+    echo "Publishing to broker: ${BROKER}"
+    echo "Topic: ${TOPIC}"
+    echo "Press Ctrl+C to stop"
+    echo ""
+    
+    while true; do
+        local sensor_value=$(read_motion_sensor ${GPIO_PIN})
+        local timestamp=$(date '+%Y-%m-%d %H:%M:%S')
+        
+        if [ "$sensor_value" = "1" ]; then
+            local message="MOTION DETECTED at $timestamp"
+            echo "$message"
+            
+            mosquitto_pub -h $BROKER -m "$message" -t $TOPIC -q 0 -i "$CLIENT_ID" -d \
+                --tls-version tlsv1.3 --cafile /pqc-mqtt/cert/CA.crt \
+                --cert /pqc-mqtt/cert/publisher.crt --key /pqc-mqtt/cert/publisher.key
+        fi
+        
+        sleep 1
+    done
+}
+
 read -p "Enter BROKER_IP [localhost]: " BROKER_IP
 BROKER_IP=${BROKER_IP:-localhost}
 
@@ -22,7 +70,4 @@ openssl x509 -req -in /pqc-mqtt/cert/publisher.csr -out /pqc-mqtt/cert/publisher
 # modify file permissions
 chmod 777 /pqc-mqtt/cert/*
 
-# execute the mosquitto MQTT publisher
-mosquitto_pub -h $BROKER_IP -m "Hello world." -t pqc-mqtt-sensor/motion-sensor -q 0 -i "Client_pub" -d --repeat 60 --repeat-delay 1 \
---tls-version tlsv1.3 --cafile /pqc-mqtt/cert/CA.crt \
---cert /pqc-mqtt/cert/publisher.crt --key /pqc-mqtt/cert/publisher.key
+publish_motion_simple "$BROKER_IP" "$GPIO_PIN"

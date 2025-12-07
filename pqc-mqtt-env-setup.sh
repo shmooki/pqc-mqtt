@@ -2,6 +2,29 @@
 
 # Original Dockerfile made by Chia-Chin Chung <60947091s@gapps.ntnu.edu.tw> and converted to a bash script
 
+# Copy CA certificate to remote hosts using SCP
+copy_ca_certificate() {
+    local user=$1
+    local host=$2
+    local remote_path=$3
+    local role=$4
+    
+    if [ -n "$user" ]; then
+        echo "Copying CA certificate to $role ($user@$host:$remote_path/)..."
+        
+        # Create remote directory if it doesn't exist
+        ssh -o BatchMode=yes -o ConnectTimeout=10 "$user@$host" "mkdir -p $remote_path" 2>/dev/null || true
+        
+        # Copy CA certificate
+        if scp -o BatchMode=yes -o ConnectTimeout=10 /pqc-mqtt/CA.crt "$user@$host:$remote_path/"; then
+            echo "  ✓ Successfully copied CA certificate to $role"
+        else
+            echo "  ✗ Failed to copy CA certificate to $role"
+            echo "    Make sure SSH key authentication is set up or check the connection"
+        fi
+    fi
+}
+
 set -e  # Exit on any error
 
 # Configuration variables
@@ -36,6 +59,15 @@ echo "  PUB_IP: $PUB_IP"
 echo "  SUB_IP: $SUB_IP"
 echo ""
 
+# Get SCP configuration
+echo "=== SCP Configuration for CA Certificate ==="
+echo "The CA certificate will be copied to subscriber and publisher hosts."
+echo "Leave username blank if you don't want to copy to that host."
+echo ""
+
+read -p "Enter SSH username for PUBLISHER ($PUB_IP) [leave blank to skip]: " PUB_USER
+read -p "Enter SSH username for SUBSCRIBER ($SUB_IP) [leave blank to skip]: " SUB_USER
+
 # Update system and install prerequisites
 echo "Updating system and installing prerequisites..."
 apt update && apt install -y build-essential \
@@ -54,7 +86,8 @@ apt update && apt install -y build-essential \
     libsqlite3-dev \
     xsltproc \
     docbook-xsl \
-    openssh-client
+    openssh-client \
+    gpiod
 
 # Create installation directory
 mkdir -p $INSTALLDIR
@@ -159,6 +192,20 @@ find /pqc-mqtt -type f -name "*.conf" -exec sed -i 's/\r//' {} \; 2>/dev/null ||
 # Set executable permissions only for script files
 echo "Setting executable permissions..."
 find /pqc-mqtt -type f -name "*.sh" -exec chmod +x {} \; 2>/dev/null || true
+
+# Generate CA key and certificate
+echo "Generating CA certificate..."
+cd /pqc-mqtt
+openssl req -x509 -new -newkey $SIG_ALG -keyout /pqc-mqtt/CA.key -out /pqc-mqtt/CA.crt -nodes -subj "/O=pqc-mqtt-ca" -days 3650
+
+# Copy CA certificate to publisher and subscriber
+if [ "$PUB_IP" != "localhost" ] && [ -n "$PUB_USER" ]; then
+    copy_ca_certificate "$PUB_USER" "$PUB_IP" "/pqc-mqtt/cert" "publisher"
+fi
+
+if [ "$SUB_IP" != "localhost" ] && [ -n "$SUB_USER" ]; then
+    copy_ca_certificate "$SUB_USER" "$SUB_IP" "/pqc-mqtt/cert" "subscriber"
+fi
 
 echo ""
 echo "=== Setup completed successfully! ==="
