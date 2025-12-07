@@ -8,7 +8,8 @@ copy_ca_certificate() {
     local role=$4
     
     if [ -n "$user" ]; then
-        echo "** $user@$host CA key/cert configuration **"
+        echo "$user@$host CA key/cert configuration"
+        echo "------------------------------------------------------"
 
         # copy files to /tmp first (can't scp directly to / )
         if scp /pqc-mqtt/CA.crt /pqc-mqtt/CA.key "$user@$host:/tmp/"; then
@@ -62,7 +63,7 @@ echo "------------------------------------------------------"
 
 ########## main ##########
 
-# generate the CA key and PQC certificates
+# generate the CA key and PQC certificates; suppress output
 cd /pqc-mqtt
 openssl req -x509 -new -newkey $SIG_ALG -keyout /pqc-mqtt/CA.key -out /pqc-mqtt/CA.crt -nodes -subj "/O=pqc-mqtt-ca" -days 3650 > /dev/null 2>&1
 
@@ -114,7 +115,7 @@ mkdir -p /pqc-mqtt/cert
 # copy the CA key and the cert to the cert folder
 cp /pqc-mqtt/CA.key /pqc-mqtt/CA.crt /pqc-mqtt/cert
 
-# generate the new server CSR and cert using pre-set CA.key & cert
+# generate the new server CSR and cert using pre-set CA.key & cert; suppress output
 openssl req -new -newkey $SIG_ALG -keyout /pqc-mqtt/cert/broker.key -out /pqc-mqtt/cert/broker.csr -nodes -subj "/O=pqc-mqtt-broker/CN=$BROKER_IP" > /dev/null 2>&1
 openssl x509 -req -in /pqc-mqtt/cert/broker.csr -out /pqc-mqtt/cert/broker.crt -CA /pqc-mqtt/cert/CA.crt -CAkey /pqc-mqtt/cert/CA.key -CAcreateserial -days 365 > /dev/null 2>&1
 

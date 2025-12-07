@@ -17,7 +17,7 @@ read -p "Enter subscriber IP address: " SUB_IP
 SUB_IP=${SUB_IP:-localhost}
 echo "------------------------------------------------------"
 
-# generate the new subscriber CSR and cert using pre-set CA.key & cert
+# generate the new subscriber CSR and cert using pre-set CA.key & cert; suppress output
 openssl req -new -newkey $SIG_ALG -keyout /pqc-mqtt/cert/subscriber.key -out /pqc-mqtt/cert/subscriber.csr -nodes -subj "/O=pqc-mqtt-subscriber/CN=$SUB_IP" > /dev/null 2>&1
 openssl x509 -req -in /pqc-mqtt/cert/subscriber.csr -out /pqc-mqtt/cert/subscriber.crt -CA /pqc-mqtt/cert/CA.crt -CAkey /pqc-mqtt/cert/CA.key -CAcreateserial -days 365 > /dev/null 2>&1
 

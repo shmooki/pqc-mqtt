@@ -34,7 +34,7 @@ read -p "Enter publisher IP address: " PUB_IP
 PUB_IP=${PUB_IP:-localhost}
 echo "------------------------------------------------------"
 
-# generate the publisher PQC certificates
+# generate the publisher PQC certificates; suppress output
 openssl req -new -newkey $SIG_ALG -keyout /pqc-mqtt/cert/publisher.key -out /pqc-mqtt/cert/publisher.csr -nodes -subj "/O=pqc-mqtt-publisher/CN=$PUB_IP" > /dev/null 2>&1
 openssl x509 -req -in /pqc-mqtt/cert/publisher.csr -out /pqc-mqtt/cert/publisher.crt -CA /pqc-mqtt/cert/CA.crt -CAkey /pqc-mqtt/cert/CA.key -CAcreateserial -days 365 > /dev/null 2>&1
 chmod 777 /pqc-mqtt/cert/* 2>/dev/null || true
