@@ -52,7 +52,6 @@ export LD_LIBRARY_PATH=/opt/oqssa/lib64
 export OPENSSL_CONF=/opt/oqssa/ssl/openssl.cnf
 export PATH="/usr/local/bin:/usr/local/sbin:${INSTALLDIR}/bin:$PATH"
 
-echo "=== OQSSA Configuration ==="
 read -p "Enter BROKER_IP [localhost]: " BROKER_IP
 BROKER_IP=${BROKER_IP:-localhost}
 

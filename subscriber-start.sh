@@ -22,6 +22,6 @@ openssl x509 -req -in /pqc-mqtt/cert/subscriber.csr -out /pqc-mqtt/cert/subscrib
 chmod 777 /pqc-mqtt/cert/*
  
 # execute the mosquitto MQTT subscriber
-mosquitto_sub -h $BROKER_IP -t pqc-mqtt-sensor/motion-sensor -q 0 -i "Client_sub" -d -v \
+mosquitto_sub -h $BROKER_IP -t pqc-mqtt-sensor/motion-sensor -q 0 -i "Client_sub" -v \
 --tls-version tlsv1.3 --cafile /pqc-mqtt/cert/CA.crt \
 --cert /pqc-mqtt/cert/subscriber.crt --key /pqc-mqtt/cert/subscriber.key
