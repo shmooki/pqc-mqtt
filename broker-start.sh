@@ -8,7 +8,7 @@ copy_ca_certificate() {
     local role=$4
     
     if [ -n "$user" ]; then
-        echo "=== $user@$host CA key/cert configuration ==="
+        echo "** $user@$host CA key/cert configuration **"
 
         # copy files to /tmp first (can't scp directly to / )
         if scp /pqc-mqtt/CA.crt /pqc-mqtt/CA.key "$user@$host:/tmp/"; then
@@ -44,20 +44,20 @@ export OPENSSL_CONF=/opt/oqssa/ssl/openssl.cnf
 export PATH="/usr/local/bin:/usr/local/sbin:${INSTALLDIR}/bin:$PATH"
 
 # configure the ip addresses
-echo "-----------------------------------------"
+echo "------------------------------------------------------"
 read -p "Enter broker IP address: " BROKER_IP
 BROKER_IP=${BROKER_IP:-localhost}
 read -p "Enter publisher IP address: " PUB_IP
 PUB_IP=${PUB_IP:-localhost}
 read -p "Enter subscriber IP address: " SUB_IP
 SUB_IP=${SUB_IP:-localhost}
-echo "-----------------------------------------"
+echo "------------------------------------------------------"
 
 # get SCP configuration
 echo "The CA certificate will be copied to subscriber and publisher hosts."
 read -p "Enter SSH username for PUBLISHER ($PUB_IP): " PUB_USER
 read -p "Enter SSH username for SUBSCRIBER ($SUB_IP): " SUB_USER
-echo "-----------------------------------------"
+echo "------------------------------------------------------"
 
 
 ########## main ##########
@@ -69,12 +69,12 @@ openssl req -x509 -new -newkey $SIG_ALG -keyout /pqc-mqtt/CA.key -out /pqc-mqtt/
 # copy CA cert to publisher and subscriber
 if [ "$PUB_IP" != "localhost" ] && [ -n "$PUB_USER" ]; then
     copy_ca_certificate "$PUB_USER" "$PUB_IP" "/pqc-mqtt/cert" "publisher"
-    echo "-----------------------------------------"
+    echo "------------------------------------------------------"
 fi
 
 if [ "$SUB_IP" != "localhost" ] && [ -n "$SUB_USER" ]; then
     copy_ca_certificate "$SUB_USER" "$SUB_IP" "/pqc-mqtt/cert" "subscriber"
-    echo "-----------------------------------------"
+    echo "------------------------------------------------------"
 fi
 
 # generate the configuration file for mosquitto

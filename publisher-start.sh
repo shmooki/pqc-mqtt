@@ -2,12 +2,12 @@
 
 ########## functions ##########
 cleanup() {
-    echo "-----------------------------------------"
+    echo "------------------------------------------------------"
     echo "Cleaning up..."
     sudo gpioset $GPIO_CHIP $LED_STATUS_PIN=0
     sudo gpioset $GPIO_CHIP $LED_DETECT_PIN=0
     echo "GPIO cleaned up"
-    echo "-----------------------------------------"
+    echo "------------------------------------------------------"
     exit 0
 }
 
@@ -27,19 +27,17 @@ export OPENSSL_CONF=/opt/oqssa/ssl/openssl.cnf
 export PATH="/usr/local/bin:/usr/local/sbin:${INSTALLDIR}/bin:$PATH"
 
 # configure the ip addresses
-echo "-----------------------------------------"
+echo "------------------------------------------------------"
 read -p "Enter broker IP address: " BROKER_IP
 BROKER_IP=${BROKER_IP:-localhost}
 read -p "Enter publisher IP address: " PUB_IP
 PUB_IP=${PUB_IP:-localhost}
-echo "-----------------------------------------"
+echo "------------------------------------------------------"
 
 # generate the publisher PQC certificates
-echo "Generating PQC certificates..."
-openssl req -new -newkey $SIG_ALG -keyout /pqc-mqtt/cert/publisher.key -out /pqc-mqtt/cert/publisher.csr -nodes -subj "/O=pqc-mqtt-publisher/CN=$PUB_IP" 
-openssl x509 -req -in /pqc-mqtt/cert/publisher.csr -out /pqc-mqtt/cert/publisher.crt -CA /pqc-mqtt/cert/CA.crt -CAkey /pqc-mqtt/cert/CA.key -CAcreateserial -days 365 
+openssl req -new -newkey $SIG_ALG -keyout /pqc-mqtt/cert/publisher.key -out /pqc-mqtt/cert/publisher.csr -nodes -subj "/O=pqc-mqtt-publisher/CN=$PUB_IP" > /dev/null 2>&1
+openssl x509 -req -in /pqc-mqtt/cert/publisher.csr -out /pqc-mqtt/cert/publisher.crt -CA /pqc-mqtt/cert/CA.crt -CAkey /pqc-mqtt/cert/CA.key -CAcreateserial -days 365 > /dev/null 2>&1
 chmod 777 /pqc-mqtt/cert/* 2>/dev/null || true
-echo "-----------------------------------------"
 
 # initialize the motion sensor
 echo "Certificates generated successfully."
@@ -47,14 +45,14 @@ echo "Starting motion sensor monitor..."
 echo "Initial motion sensor reading:"
 initial_state=$(sudo gpioget $GPIO_CHIP $MOTION_PIN)
 echo "GPIO$MOTION_PIN = $initial_state"
-echo "-----------------------------------------"
+echo "------------------------------------------------------"
 
 # turn on the status LED 
 sudo gpioset $GPIO_CHIP $LED_STATUS_PIN=1
 echo "Status LED: ON (GPIO$LED_STATUS_PIN)"
 echo "Watching for motion on GPIO$MOTION_PIN..."
 echo "Press Ctrl+C to stop"
-echo "-----------------------------------------"
+echo "------------------------------------------------------"
 
 # state machine vars
 last_state="0"
