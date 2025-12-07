@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Copy CA certificate to remote hosts using SCP
+########## functions ##########
 copy_ca_certificate() {
     local user=$1
     local host=$2
@@ -8,18 +8,16 @@ copy_ca_certificate() {
     local role=$4
     
     if [ -n "$user" ]; then
-        echo "=== $role ($user@$host) ==="
-        
+
         # Test SSH connection
         if ssh "$user@$host" "echo 'SSH test successful'" &>/dev/null; then
-            echo "SSH key authentication: ✓ Working"
-            echo "Copying CA certificate and key..."
+            echo "-----------------------------------------"
             
-            # Copy both files to /tmp first
+            # copy files to /tmp first (can't scp directly to / )
             if scp /pqc-mqtt/CA.crt /pqc-mqtt/CA.key "$user@$host:/tmp/"; then
-                echo "✓ Files copied to /tmp/ on remote host"
+                echo "Success   :   files copied to /tmp/ on remote host..."
                 
-                # Move to final location with proper permissions
+                # move to /pqc-mqtt/cert
                 if ssh "$user@$host" "
                     sudo mkdir -p '$remote_path' && \
                     sudo cp /tmp/CA.crt /tmp/CA.key '$remote_path'/ && \
@@ -27,55 +25,58 @@ copy_ca_certificate() {
                     sudo chmod 777 '$remote_path'/CA.key && \
                     sudo rm -f /tmp/CA.crt /tmp/CA.key
                 "; then
-                    echo "✓ CA certificate and key installed successfully to $remote_path/"
+                    echo "Success   : installed CA certificate and key to $remote_path/..."
                 else
-                    echo "✗ Failed to move files to final location"
-                    echo "  Manual command:"
-                    echo "  ssh $user@$host \"sudo mkdir -p '$remote_path' && sudo cp /tmp/CA.crt /tmp/CA.key '$remote_path'/ && sudo chmod 644 '$remote_path'/CA.crt && sudo chmod 600 '$remote_path'/CA.key\""
+                    echo "Failure   : cannot move files to final $remote_path/"
                     return 1
                 fi
             else
-                echo "✗ Failed to copy CA files to remote host"
-                echo "  Manual command: scp /pqc-mqtt/CA.crt /pqc-mqtt/CA.key $user@$host:/tmp/"
+                echo "Failure   :   cannot copy CA files to remote host."
                 return 1
             fi
         else
-            echo "✗ SSH key authentication not working"
+            echo "Failure   : cannot perform SSH key authentication."
         fi
         echo "----------------------------------------"
     fi
 }
 
+########## initialization ##########
+
+# configure the PQC setup 
 SIG_ALG="falcon1024"
 INSTALLDIR="/opt/oqssa"
 export LD_LIBRARY_PATH=/opt/oqssa/lib64
 export OPENSSL_CONF=/opt/oqssa/ssl/openssl.cnf
 export PATH="/usr/local/bin:/usr/local/sbin:${INSTALLDIR}/bin:$PATH"
 
-read -p "Enter BROKER_IP [localhost]: " BROKER_IP
+# configure the ip addresses
+echo "-----------------------------------------"
+read -p "Enter broker IP address: " BROKER_IP
 BROKER_IP=${BROKER_IP:-localhost}
-
-read -p "Enter PUB_IP [localhost]: " PUB_IP
+read -p "Enter publisher IP address: " PUB_IP
 PUB_IP=${PUB_IP:-localhost}
-
-read -p "Enter SUB_IP [localhost]: " SUB_IP
+read -p "Enter subscriber IP address: " SUB_IP
 SUB_IP=${SUB_IP:-localhost}
+echo "-----------------------------------------"
 
-# Get SCP configuration
-echo "=== SCP Configuration for CA Certificate ==="
+# get SCP configuration
+echo "-----------------------------------------"
 echo "The CA certificate will be copied to subscriber and publisher hosts."
-echo "Leave username blank if you don't want to copy to that host."
-echo ""
+read -p "Enter SSH username for PUBLISHER ($PUB_IP)" PUB_USER
+read -p "Enter SSH username for SUBSCRIBER ($SUB_IP)" SUB_USER
+echo "-----------------------------------------"
 
-read -p "Enter SSH username for PUBLISHER ($PUB_IP) [leave blank to skip]: " PUB_USER
-read -p "Enter SSH username for SUBSCRIBER ($SUB_IP) [leave blank to skip]: " SUB_USER
 
-# Generate CA key and certificate
+########## main ##########
+
+# generate the CA key and PQC certificates
 echo "Generating CA certificate..."
 cd /pqc-mqtt
 openssl req -x509 -new -newkey $SIG_ALG -keyout /pqc-mqtt/CA.key -out /pqc-mqtt/CA.crt -nodes -subj "/O=pqc-mqtt-ca" -days 3650
+echo "----------------------------------------"
 
-# Copy CA certificate to publisher and subscriber
+# copy CA cert to publisher and subscriber
 if [ "$PUB_IP" != "localhost" ] && [ -n "$PUB_USER" ]; then
     copy_ca_certificate "$PUB_USER" "$PUB_IP" "/pqc-mqtt/cert" "publisher"
 fi
@@ -115,16 +116,17 @@ mosquitto_passwd -b -c passwd broker 12345
 # generate the Access Control List
 echo -e "user broker\ntopic readwrite pqc-mqtt-sensor/motion-sensor" > acl
 
-mkdir /pqc-mqtt/cert
+# create the cert directory
+mkdir -p /pqc-mqtt/cert
 
 # copy the CA key and the cert to the cert folder
 cp /pqc-mqtt/CA.key /pqc-mqtt/CA.crt /pqc-mqtt/cert
 
-# generate the new server CSR using pre-set CA.key & cert
+# generate the new server CSR and cert using pre-set CA.key & cert
+echo "-----------------------------------------"
 openssl req -new -newkey $SIG_ALG -keyout /pqc-mqtt/cert/broker.key -out /pqc-mqtt/cert/broker.csr -nodes -subj "/O=pqc-mqtt-broker/CN=$BROKER_IP"
-
-# generate the server cert
 openssl x509 -req -in /pqc-mqtt/cert/broker.csr -out /pqc-mqtt/cert/broker.crt -CA /pqc-mqtt/cert/CA.crt -CAkey /pqc-mqtt/cert/CA.key -CAcreateserial -days 365
+echo "-----------------------------------------"
 
 # modify file permissions
 chmod 777 /pqc-mqtt/cert/*

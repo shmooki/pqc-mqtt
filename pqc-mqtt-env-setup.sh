@@ -143,7 +143,7 @@ find /pqc-mqtt -type f -name "*.conf" -exec sed -i 's/\r//' {} \; 2>/dev/null ||
 echo "Setting executable permissions..."
 find /pqc-mqtt -type f -name "*.sh" -exec chmod +x {} \; 2>/dev/null || true
 
-echo ""
+echo "-----------------------------------------"
 echo "=== Setup completed successfully! ==="
-echo ""
 echo "MQTTS port 8883 is available for use"
+echo "-----------------------------------------"

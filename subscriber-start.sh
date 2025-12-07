@@ -1,22 +1,26 @@
 #!/bin/bash
 
-read -p "Enter BROKER_IP [localhost]: " BROKER_IP
-BROKER_IP=${BROKER_IP:-localhost}
+########## initialization ##########
 
-read -p "Enter SUB_IP [localhost]: " SUB_IP
-SUB_IP=${SUB_IP:-localhost}
-
+# configure the PQC setup 
 SIG_ALG="falcon1024"
 INSTALLDIR="/opt/oqssa"
 export LD_LIBRARY_PATH=/opt/oqssa/lib64
 export OPENSSL_CONF=/opt/oqssa/ssl/openssl.cnf
 export PATH="/usr/local/bin:/usr/local/sbin:${INSTALLDIR}/bin:$PATH"
 
-# generate the new subscriber CSR using pre-set CA.key & cert
-openssl req -new -newkey $SIG_ALG -keyout /pqc-mqtt/cert/subscriber.key -out /pqc-mqtt/cert/subscriber.csr -nodes -subj "/O=pqc-mqtt-subscriber/CN=$SUB_IP"
+# configure the ip addresses
+echo "-----------------------------------------"
+read -p "Enter broker IP address: " BROKER_IP
+BROKER_IP=${BROKER_IP:-localhost}
+read -p "Enter subscriber IP address: " SUB_IP
+SUB_IP=${SUB_IP:-localhost}
+echo "-----------------------------------------"
 
-# generate the subscriber cert
+# generate the new subscriber CSR and cert using pre-set CA.key & cert
+openssl req -new -newkey $SIG_ALG -keyout /pqc-mqtt/cert/subscriber.key -out /pqc-mqtt/cert/subscriber.csr -nodes -subj "/O=pqc-mqtt-subscriber/CN=$SUB_IP"
 openssl x509 -req -in /pqc-mqtt/cert/subscriber.csr -out /pqc-mqtt/cert/subscriber.crt -CA /pqc-mqtt/cert/CA.crt -CAkey /pqc-mqtt/cert/CA.key -CAcreateserial -days 365
+echo "-----------------------------------------"
 
 # modify file permissions
 chmod 777 /pqc-mqtt/cert/*

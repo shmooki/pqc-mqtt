@@ -2,8 +2,8 @@
 
 set -e
 
+echo "-----------------------------------------"
 echo "Cleaning up PQC/MQTT installation..."
-echo ""
 
 # Check if running as root
 if [[ $EUID -ne 0 ]]; then
@@ -27,5 +27,5 @@ rm -rf /usr/local/lib/libmosquitto* 2>/dev/null || true
 echo "Cleaning up symlinks..."
 rm -f /usr/lib/libmosquitto.so.1 2>/dev/null || true
 
-echo ""
 echo "Cleanup completed."
+echo "-----------------------------------------"
