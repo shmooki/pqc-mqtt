@@ -18,33 +18,6 @@ MOSQUITTO_TAG="v2.0.20"
 export TZ="America/New_York"
 export DEBIAN_FRONTEND=noninteractive
 
-# Get user input for IP addresses
-echo "=== OQSSA Configuration ==="
-read -p "Enter BROKER_IP [localhost]: " BROKER_IP
-BROKER_IP=${BROKER_IP:-localhost}
-
-read -p "Enter PUB_IP [localhost]: " PUB_IP
-PUB_IP=${PUB_IP:-localhost}
-
-read -p "Enter SUB_IP [localhost]: " SUB_IP
-SUB_IP=${SUB_IP:-localhost}
-
-echo ""
-echo "Configuration:"
-echo "  BROKER_IP: $BROKER_IP"
-echo "  PUB_IP: $PUB_IP"
-echo "  SUB_IP: $SUB_IP"
-echo ""
-
-# Get SCP configuration
-echo "=== SCP Configuration for CA Certificate ==="
-echo "The CA certificate will be copied to subscriber and publisher hosts."
-echo "Leave username blank if you don't want to copy to that host."
-echo ""
-
-read -p "Enter SSH username for PUBLISHER ($PUB_IP) [leave blank to skip]: " PUB_USER
-read -p "Enter SSH username for SUBSCRIBER ($SUB_IP) [leave blank to skip]: " SUB_USER
-
 # Update system and install prerequisites
 echo "Updating system and installing prerequisites..."
 apt update && apt install -y build-essential \
@@ -172,12 +145,5 @@ find /pqc-mqtt -type f -name "*.sh" -exec chmod +x {} \; 2>/dev/null || true
 
 echo ""
 echo "=== Setup completed successfully! ==="
-echo ""
-echo "Configuration Summary:"
-echo "  BROKER_IP: $BROKER_IP"
-echo "  PUB_IP: $PUB_IP"
-echo "  SUB_IP: $SUB_IP"
-echo "  SIG_ALG: $SIG_ALG"
-echo "  KEM_ALGLIST: $KEM_ALGLIST"
 echo ""
 echo "MQTTS port 8883 is available for use"
