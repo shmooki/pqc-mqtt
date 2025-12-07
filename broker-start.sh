@@ -12,7 +12,7 @@ copy_ca_certificate() {
 
         # copy files to /tmp first (can't scp directly to / )
         if scp /pqc-mqtt/CA.crt /pqc-mqtt/CA.key "$user@$host:/tmp/"; then
-            echo "Success   :   files copied to /tmp/ on $user@$host"
+            echo "Success   :   files copied to /tmp/ on $user@$host."
         else
             echo "Failure   :   cannot copy CA files to remote host."
             return 1
@@ -28,7 +28,7 @@ copy_ca_certificate() {
         "; then
             echo "Success   : installed CA certificate and key to $user@$host:$remote_path/."
         else
-            echo "Failure   : cannot move files to final $remote_path/"
+            echo "Failure   : cannot move files to final $remote_path/."
             return 1
         fi
     fi
@@ -63,9 +63,8 @@ echo "-----------------------------------------"
 ########## main ##########
 
 # generate the CA key and PQC certificates
-echo "Generating CA certificate..."
 cd /pqc-mqtt
-openssl req -x509 -new -newkey $SIG_ALG -keyout /pqc-mqtt/CA.key -out /pqc-mqtt/CA.crt -nodes -subj "/O=pqc-mqtt-ca" -days 3650 
+openssl req -x509 -new -newkey $SIG_ALG -keyout /pqc-mqtt/CA.key -out /pqc-mqtt/CA.crt -nodes -subj "/O=pqc-mqtt-ca" -days 3650 > /dev/null 2>&1
 echo "-----------------------------------------"
 
 # copy CA cert to publisher and subscriber
@@ -117,9 +116,8 @@ mkdir -p /pqc-mqtt/cert
 cp /pqc-mqtt/CA.key /pqc-mqtt/CA.crt /pqc-mqtt/cert
 
 # generate the new server CSR and cert using pre-set CA.key & cert
-echo "-----------------------------------------"
-openssl req -new -newkey $SIG_ALG -keyout /pqc-mqtt/cert/broker.key -out /pqc-mqtt/cert/broker.csr -nodes -subj "/O=pqc-mqtt-broker/CN=$BROKER_IP"
-openssl x509 -req -in /pqc-mqtt/cert/broker.csr -out /pqc-mqtt/cert/broker.crt -CA /pqc-mqtt/cert/CA.crt -CAkey /pqc-mqtt/cert/CA.key -CAcreateserial -days 365
+openssl req -new -newkey $SIG_ALG -keyout /pqc-mqtt/cert/broker.key -out /pqc-mqtt/cert/broker.csr -nodes -subj "/O=pqc-mqtt-broker/CN=$BROKER_IP" > /dev/null 2>&1
+openssl x509 -req -in /pqc-mqtt/cert/broker.csr -out /pqc-mqtt/cert/broker.crt -CA /pqc-mqtt/cert/CA.crt -CAkey /pqc-mqtt/cert/CA.key -CAcreateserial -days 365 > /dev/null 2>&1
 echo "-----------------------------------------"
 
 # modify file permissions
