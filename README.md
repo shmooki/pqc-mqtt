@@ -2,6 +2,9 @@
 
 A Post-Quantum Cryptography (PQC) secured MQTT motion sensor system with Raspberry Pi GPIO integration. This system enables secure transmission of motion sensor data using quantum-resistant cryptographic algorithms. More specifically, it utilizes the falcon1024 signing algorithm for all MQTT communications.
 
+This repo expands upon the work found here: https://github.com/open-quantum-safe/oqs-demos/tree/main/mosquitto.
+Rather than implementing a simple MQTT test with the pre-built Docker file, this repo successfully implements a motion detection system via heavily modified versions of the provided bash scripts. 
+
 ## Background
 
 This repository implements a secure IoT motion sensor system using:
@@ -14,6 +17,8 @@ The system consists of three main components:
 1. **Broker**: MQTT broker with PQC authentication
 2. **Publisher**: Motion sensor node that detects and publishes motion events
 3. **Subscriber**: Client that receives and displays motion notifications
+
+All three connect via PQC certificates to one another. 
 
 ## Prerequisites
 You must have the following at your disposal to fully setup the PQC MQTT motion detection system:
@@ -170,5 +175,6 @@ Complete cleanup script for removing all PQC/MQTT components.
 - **/pqc-mqtt/** - Test files and certificates
 - **/pqc-mqtt/cert/** - CA and device certificates
 - **/usr/local/bin/mosquitto** - MQTT binaries
+
 
 
