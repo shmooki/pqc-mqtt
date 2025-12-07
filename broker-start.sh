@@ -61,10 +61,9 @@ SUB_IP=${SUB_IP:-localhost}
 echo "-----------------------------------------"
 
 # get SCP configuration
-echo "-----------------------------------------"
 echo "The CA certificate will be copied to subscriber and publisher hosts."
-read -p "Enter SSH username for PUBLISHER ($PUB_IP)" PUB_USER
-read -p "Enter SSH username for SUBSCRIBER ($SUB_IP)" SUB_USER
+read -p "Enter SSH username for PUBLISHER ($PUB_IP): " PUB_USER
+read -p "Enter SSH username for SUBSCRIBER ($SUB_IP): " SUB_USER
 echo "-----------------------------------------"
 
 
